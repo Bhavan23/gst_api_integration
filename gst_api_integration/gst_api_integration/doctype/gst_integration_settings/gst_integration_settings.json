@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-08-24 11:54:46.682965",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user_details_tab",
+  "user_name",
+  "ret_period",
+  "state_code",
+  "column_break_kpzgy",
+  "gstin",
+  "pan",
+  "requestid",
+  "section_break_y9bi0",
+  "otp",
+  "configurations_tab",
+  "base_url",
+  "client_id",
+  "is_testing",
+  "column_break_ocujr",
+  "content_type",
+  "client_secret"
+ ],
+ "fields": [
+  {
+   "collapsible": 1,
+   "fieldname": "configurations_tab",
+   "fieldtype": "Section Break",
+   "label": "GSTR 1 Configurations"
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID"
+  },
+  {
+   "fieldname": "client_secret",
+   "fieldtype": "Password",
+   "label": "Client Secret"
+  },
+  {
+   "fieldname": "user_details_tab",
+   "fieldtype": "Section Break",
+   "label": "User GST Details"
+  },
+  {
+   "fieldname": "user_name",
+   "fieldtype": "Data",
+   "label": "User Name"
+  },
+  {
+   "fieldname": "state_code",
+   "fieldtype": "Data",
+   "label": "State Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requestid",
+   "fieldtype": "Data",
+   "label": "Request Id"
+  },
+  {
+   "fieldname": "gstin",
+   "fieldtype": "Data",
+   "label": "GSTIN"
+  },
+  {
+   "description": "<b>Format</b> : {month}{year}<br>\n<b>Like</b> : 092023",
+   "fieldname": "ret_period",
+   "fieldtype": "Data",
+   "label": "Ret Period"
+  },
+  {
+   "default": "application/json",
+   "fieldname": "content_type",
+   "fieldtype": "Select",
+   "label": "Content Type",
+   "options": "application/json"
+  },
+  {
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "label": "Base URL"
+  },
+  {
+   "fieldname": "section_break_y9bi0",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_kpzgy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ocujr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_testing",
+   "fieldtype": "Check",
+   "label": "IS Testing"
+  },
+  {
+   "fieldname": "otp",
+   "fieldtype": "Data",
+   "label": "OTP"
+  },
+  {
+   "fieldname": "pan",
+   "fieldtype": "Data",
+   "label": "Pan"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2023-09-07 12:51:16.868421",
+ "modified_by": "Administrator",
+ "module": "Gst Api Integration",
+ "name": "GST Integration Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
