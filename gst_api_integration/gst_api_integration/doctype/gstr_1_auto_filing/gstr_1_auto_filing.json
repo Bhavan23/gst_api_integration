@@ -47,7 +47,7 @@
   },
   {
    "fieldname": "company_gstin",
-   "fieldtype": "Autocomplete",
+   "fieldtype": "Data",
    "label": "Company GSTIN"
   },
   {
@@ -72,7 +72,7 @@
   },
   {
    "fieldname": "json_file",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Json File"
   },
   {
@@ -87,7 +87,7 @@
   },
   {
    "fieldname": "saved_response",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Response",
    "read_only": 1
   },
@@ -103,7 +103,7 @@
   },
   {
    "fieldname": "submited_response",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Response",
    "read_only": 1
   },
@@ -120,19 +120,19 @@
   },
   {
    "fieldname": "saved_headers",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Headers",
    "read_only": 1
   },
   {
    "fieldname": "submited_headers",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Headers",
    "read_only": 1
   },
   {
    "fieldname": "submited_payload",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Submited Payload",
    "read_only": 1
   },
@@ -144,13 +144,13 @@
   },
   {
    "fieldname": "filed_headers",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Filed Headers",
    "read_only": 1
   },
   {
    "fieldname": "filed_response",
-   "fieldtype": "JSON",
+   "fieldtype": "Code",
    "label": "Filed Response",
    "read_only": 1
   },
@@ -173,10 +173,10 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-07 13:12:15.647066",
+ "modified": "2023-09-07 15:05:51.129776",
  "modified_by": "Administrator",
  "module": "Gst Api Integration",
- "name": "GSTR-1 Auto Filing",
+ "name": "GSTR 1 Auto Filing",
  "name_case": "Title Case",
  "owner": "Administrator",
  "permissions": [

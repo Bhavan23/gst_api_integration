@@ -1,7 +1,7 @@
 // Copyright (c) 2023, aerele and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on('GSTR-1 Auto Filing', {
+frappe.ui.form.on('GSTR 1 Auto Filing', {
 	refresh: function (frm) {
 		frm.set_value("company", frappe.defaults.get_user_default("Company"))
 		if (!["Saved Successfully", "Proceeded", "Succesfully Filed"].includes(cur_frm.doc.status) && !cur_frm.doc.__islocal){

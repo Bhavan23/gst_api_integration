@@ -32,7 +32,7 @@ class GSTR1AutoFiling(Document):
 	def before_save(self):
 		#validate existing document 
 		if self.from_date and self.is_new():
-			if frappe.db.sql("select name from `tabGSTR-1 Auto Filing` where to_date BETWEEN '{0}' AND '{1}' AND  docstatus < 2 AND type_of_business = '{2}'".format(self.from_date, self.to_date, self.type_of_business ), debug= True):
+			if frappe.db.sql("select name from `tabGSTR 1 Auto Filing` where to_date BETWEEN '{0}' AND '{1}' AND  docstatus < 2 AND type_of_business = '{2}'".format(self.from_date, self.to_date, self.type_of_business ), debug= True):
 				frappe.throw("Already document exists for given date <b>{}</b>".format(self.from_date), title="Document Already Exists")
 				
 		if self.to_date and self.from_date:
@@ -148,17 +148,17 @@ def save_gstr1(json_file, gstin = None, to_date = None):
 		headers.pop('otp')
 		if res:
 			if res.get('status') == 200:
-				return {'headers': headers, 'res' : json.dumps(res), 'status': 'Saved Successfully', 'msg': res.get('message')}
+				return {'headers': json.dumps(headers), 'res' : json.dumps(res), 'status': 'Saved Successfully', 'msg': res.get('message')}
 			else:
-				return {'headers': headers, 'res' : json.dumps(res), 'status': 'Failed', 'msg': res.get('message')}
+				return {'headers': json.dumps(headers), 'res' : json.dumps(res), 'status': 'Failed', 'msg': res.get('message')}
 	else:
 		res = response.json()
-		return {'headers': headers, 'res' : json.dumps(res), 'status': 'Failed', 'msg':res.get('message')}
+		return {'headers': json.dumps(headers), 'res' : json.dumps(res), 'status': 'Failed', 'msg':res.get('message')}
 	
 @frappe.whitelist()
 def gstr1_status(doc_name):
 	# import pdb; pdb.set_trace()
-	doc = frappe.get_doc("GSTR-1 Auto Filing", doc_name)
+	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name)
 	
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
 	
@@ -221,7 +221,7 @@ def gstr1_status(doc_name):
 @frappe.whitelist()
 def proceed_to_file(doc_name):
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
-	doc = frappe.get_doc("GSTR-1 Auto Filing", doc_name)
+	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name)
 	
 	#GST integration Details
 	user_name = gst_integration_settings.user_name
@@ -282,8 +282,8 @@ def proceed_to_file(doc_name):
 		if res:
 			if res.get('status') == 200:
 				return {
-					"headers" : headers,
-					"payload" : payload,
+					"headers" : json.dumps(headers),
+					"payload" : json.dumps(payload),
 					"res" : json.dumps(res),
 					"status" : "Proceeded",
 					"msg": res.get('message')
@@ -297,7 +297,7 @@ def proceed_to_file(doc_name):
 @frappe.whitelist()
 def send_otp(doc_name= None):
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
-	doc = frappe.get_doc("GSTR-1 Auto Filing", doc_name) if doc_name else None
+	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name) if doc_name else None
 	
 	#GST integration Details
 	user_name = gst_integration_settings.user_name
@@ -325,7 +325,6 @@ def send_otp(doc_name= None):
 	
 	pan = gst_integration_settings.pan
 	
-	print([user_name, base_url, content_type, requestid, gstin, ret_period, pan])
 	if not all([user_name, base_url, content_type, requestid, gstin, ret_period, pan]):
 		frappe.throw("GST Details Missing")
 	
@@ -365,7 +364,7 @@ def send_otp(doc_name= None):
 @frappe.whitelist()
 def file_gstr1(otp, doc_name):
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
-	doc = frappe.get_doc("GSTR-1 Auto Filing", doc_name)
+	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name)
 	
 	#GST integration Details
 	user_name = gst_integration_settings.user_name
@@ -428,7 +427,7 @@ def file_gstr1(otp, doc_name):
 		if res:
 			if res.get('status') == 200:
 				return {
-					"headers" : headers,
+					"headers" : json.dumps(headers),
 					"res" : json.dumps(res),
 					"status" : "Succesfully Filed",
 					"reference_id" : res.get('result').get("reference_id") if res.get('result') else "",
