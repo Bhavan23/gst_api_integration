@@ -4,7 +4,13 @@
 
 import frappe
 from frappe.model.document import Document
-from india_compliance.gst_india.report.gstr_1.gstr_1 import get_json, execute
+from frappe.utils.change_log import get_versions
+if get_versions().get("erpnext"):
+	if int(get_versions().get("erpnext").get("version").split(".")[0]) < 14:
+		from erpnext.regional.report.gstr_1.gstr_1 import  get_json, execute
+	else:
+		from india_compliance.gst_india.report.gstr_1.gstr_1 import get_json, execute
+		
 import json
 import requests
 from frappe.utils import getdate
