@@ -15,7 +15,12 @@ import json
 import requests
 from frappe.utils import getdate
 
-class GSTR1AutoFiling(Document):
+from frappe.utils import random_string
+from random import randint
+
+from gst_api_integration.gst_api_integration.doctype.api_log.api_log import create_api_log
+
+class GSTR1Report(Document):
 	field_map = {
 			"B2B Invoices - 4A, 4B, 4C, 6B, 6C" : "B2B",
 			"B2C(Large) Invoices - 5A, 5B": "B2C Large" ,
@@ -28,49 +33,55 @@ class GSTR1AutoFiling(Document):
 		}
 	def autoname(self):
 		self.name =  "GSTR1-"+ self.field_map.get(self.type_of_business)+"-"+self.from_date+"-"+self.to_date
-		
-	def before_save(self):
-		#validate existing document 
-		if self.from_date and self.is_new():
-			if frappe.db.sql("select name from `tabGSTR 1 Auto Filing` where to_date BETWEEN '{0}' AND '{1}' AND  docstatus < 2 AND type_of_business = '{2}'".format(self.from_date, self.to_date, self.type_of_business ), debug= True):
-				frappe.throw("Already document exists for given date <b>{}</b>".format(self.from_date), title="Document Already Exists")
-				
+	
+	def validate(self):
+		#validate date
 		if self.to_date and self.from_date:
 			if getdate(self.to_date) <  getdate(self.from_date):
 				frappe.throw("To date cannot be before the from date",  title="Invalid Date")
+		
+	def before_save(self):
+		#validate existing document 
+		if self.is_new():
+			if self.from_date:
+				exists = frappe.db.exists("GSTR 1 Report", {"to_date": ["between",[ self.from_date, self.to_date]], "type_of_business": self.type_of_business})
+				if exists:
+					frappe.throw("Already document exists for given period <b>{}</b>".format(self.from_date), title="Document Already Exists")
+					
+			filters = {'company': self.company, 'company_address': self.company_address, 'company_gstin': self.company_gstin, 'from_date': self.from_date, 'to_date': self.to_date, 'type_of_business': self.field_map.get(self.type_of_business)}
+			
+			filters = {filter: filters.get(filter) for filter in filters if filters.get(filter)}
+			
+			columns, datas = execute(filters=filters)
+			
+			new_datas = []
+			
+			if not datas:
+				frappe.msgprint("For the specified time period, no records were found!", title= "No Data")
+				if not self.json_file:
+					self.json_file = "{}"
+				return
 				
-		filters = {'company': self.company, 'company_address': self.company_address, 'company_gstin': self.company_gstin, 'from_date': self.from_date, 'to_date': self.to_date, 'type_of_business': self.field_map.get(self.type_of_business)}
-		
-		filters = {filter: filters.get(filter) for filter in filters if filters.get(filter)}
-		
-		columns, datas = execute(filters=filters)
-		
-		new_datas = []
-		
-		if not datas:
-			frappe.throw("Data not found for the given period!", "No Data")
-			
-		if isinstance(datas[0],list) or isinstance(datas[0],tuple):
-			for data in datas:
-				d = {column.get('fieldname') : data[i]  for i, column in enumerate(columns) }
-				new_datas.append(d)
+			if isinstance(datas[0],list) or isinstance(datas[0],tuple):
+				for data in datas:
+					d = {column.get('fieldname') : data[i]  for i, column in enumerate(columns) }
+					new_datas.append(d)
+				else:
+					new_datas.append({})
 			else:
-				new_datas.append({})
-		else:
-			new_datas = datas
-		try:
-			json_data = get_json(data= json.dumps(new_datas),	report_name= 'GSTR-1', filters= json.dumps(filters))
-		except KeyError as e:
-			frappe.throw(str(e).replace("'", '').replace("_", ' ').title(), title="Missing Value")
-		except Exception as e:
-			frappe.throw(str(e), "Error")
+				new_datas = datas
+				
+			try:
+				json_data = get_json(data= json.dumps(new_datas),	report_name= 'GSTR-1', filters= json.dumps(filters))
+			except KeyError as e:
+				frappe.throw(str(e).replace("'", '').replace("_", ' ').title(), title="Missing Value")
+			except Exception as e:
+				frappe.throw(str(e), "Error")
 			
-		if frappe.get_single('GST Integration Settings').is_testing:
-			self.json_file = "{}"
-			return
-		
-		self.json_file = json.dumps(json_data.get("data"))
-		
+		if not self.json_file or self.json_file == "{}":
+			self.json_file = json.dumps(json_data.get("data"))
+			
+			
 #access token
 def get_access_token(gst_integration_settings= None, base_url= None, id= None, key= None):
 	gst_integration_settings = frappe.get_single('GST Integration Settings') if not gst_integration_settings else gst_integration_settings
@@ -86,6 +97,8 @@ def get_access_token(gst_integration_settings= None, base_url= None, id= None, k
 		'gspappsecret': key
 	}
 	response = requests.request("POST", url, headers=headers)
+	
+	create_api_log(response, action= "token")
 	
 	if response.ok:
 		return response.json().get("access_token")
@@ -103,7 +116,7 @@ def save_gstr1(json_file, gstin = None, to_date = None):
 	content_type = gst_integration_settings.content_type
 	
 	otp = gst_integration_settings.otp
-	requestid = gst_integration_settings.requestid
+	requestid = random_string(randint(8,16))
 	
 	if gstin:
 		state_code = gstin[:2] 
@@ -111,9 +124,7 @@ def save_gstr1(json_file, gstin = None, to_date = None):
 		gstin = gst_integration_settings.gstin
 		state_code = gstin[:2]
 	
-	ret_period = gst_integration_settings.ret_period
-	if to_date:
-		ret_period = getdate(to_date).strftime("%m%Y")
+	ret_period = getdate(to_date).strftime("%m%Y")
 		
 	if not all([user_name, base_url, content_type, requestid, gstin, ret_period]):
 		frappe.throw("GST Details Missing")
@@ -138,9 +149,10 @@ def save_gstr1(json_file, gstin = None, to_date = None):
 		'ret_period': ret_period,
 		'Authorization': "Bearer " + access_token
 }
-	
+
 	response = requests.request("PUT", url, headers=headers, data= payload)
-	# import pdb; pdb.set_trace()
+	
+	create_api_log(response, action= "RETSAVE")
 	
 	if response.ok:
 		res = response.json()
@@ -157,8 +169,7 @@ def save_gstr1(json_file, gstin = None, to_date = None):
 	
 @frappe.whitelist()
 def gstr1_status(doc_name):
-	# import pdb; pdb.set_trace()
-	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name)
+	doc = frappe.get_doc("GSTR 1 Report", doc_name)
 	
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
 	
@@ -173,21 +184,17 @@ def gstr1_status(doc_name):
 	
 	gstin = doc.company_gstin
 	if gstin:
-		state_code = gstin[:2] 
+		state_code = gstin[:2]
 	else:
 		gstin = gst_integration_settings.gstin
 		state_code = gstin[:2]
 	
-	ret_period = gst_integration_settings.ret_period
-	if doc.to_date:
-		ret_period = getdate(doc.to_date).strftime("%m%Y")
+	ret_period = getdate(doc.to_date).strftime("%m%Y")
 		
 	if not all([user_name, base_url, content_type, requestid, gstin, ret_period]):
 		frappe.throw("GST Details Missing")
 		
 	access_token = get_access_token(gst_integration_settings, base_url)
-		
-	# import pdb; pdb.set_trace()	
 	
 	path = "/enriched/returns?action=RETSTATUS&gstin={}&ret_period={}".format(gstin, ret_period)
 	if gst_integration_settings.is_testing:
@@ -204,24 +211,25 @@ def gstr1_status(doc_name):
 		'gstin': gstin,
 		'ret_period': ret_period,
 		'Authorization': "Bearer " + access_token
-}
+	}
+				
 	response = requests.request("GET", url, headers=headers)
-	# import pdb; pdb.set_trace()	
+	
+	create_api_log(response, action= "RETSTATUS")
 	
 	if response.ok:
-		# import pdb; pdb.set_trace()
 		res = response.json()
-		if res.get("error_report"):
-			frappe.msgprint(json.dumps(res.get("error_report")), title= "Error Report")
+		if res.get('error_report'):
+			frappe.msgprint(res.get('error_report').get('error_msg'), title= res.get('status_cd')+ ' - ' + res.get('error_report').get('error_cd'))
 		else:
-			frappe.msgprint("No Error Report")
+			frappe.msgprint(response.text, res.get('status_cd'))
 	else:
 		frappe.msgprint("Failed")
 		
 @frappe.whitelist()
-def proceed_to_file(doc_name):
+def proceed_to_file(ret_period= None):
+	
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
-	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name)
 	
 	#GST integration Details
 	user_name = gst_integration_settings.user_name
@@ -229,19 +237,12 @@ def proceed_to_file(doc_name):
 	content_type = gst_integration_settings.content_type
 	
 	otp = gst_integration_settings.otp
-	saved_data = json.loads(doc.saved_headers)
-	requestid = saved_data.get('requestid')
+	requestid = random_string(randint(8,16))
 	
-	gstin = doc.company_gstin
-	if gstin:
-		state_code = gstin[:2] 
-	else:
-		gstin = gst_integration_settings.gstin
-		state_code = gstin[:2]
+	gstin = gst_integration_settings.gstin
+	state_code = gstin[:2]
 	
-	ret_period = gst_integration_settings.ret_period
-	if doc.to_date:
-		ret_period = getdate(doc.to_date).strftime("%m%Y")
+	ret_period = ret_period
 		
 	if not all([user_name, base_url, content_type, requestid, gstin, ret_period]):
 		frappe.throw("GST Details Missing")
@@ -265,15 +266,14 @@ def proceed_to_file(doc_name):
 		'Content-Type': content_type,
 		'requestid': requestid,
 		'gstin': gstin,
-		'ret_period': ret_period,
+		'ret_period': ret_period.strip(),
 		'Authorization': "Bearer " + access_token,
 		'rtn_typ': 'GSTR1',
-		'userrole': 'GSTR1'
-		
+		'userrole': 'GSTR1'	
 }
-	response = requests.request("POST", url, headers=headers, data= payload)
+	response = requests.request("POST", url, headers=headers, data= json.dumps(payload))
 	
-	# import pdb; pdb.set_trace()
+	create_api_log(response, action= "RETNEWPTF")
 	
 	if response.ok:
 		headers.pop('Authorization')
@@ -282,10 +282,6 @@ def proceed_to_file(doc_name):
 		if res:
 			if res.get('status') == 200:
 				return {
-					"headers" : json.dumps(headers),
-					"payload" : json.dumps(payload),
-					"res" : json.dumps(res),
-					"status" : "Proceeded",
 					"msg": res.get('message')
 				}
 			else:
@@ -293,11 +289,10 @@ def proceed_to_file(doc_name):
 	else:
 		res = response.json()
 		frappe.throw(res.get('error_description'), title="Error")
-	
+		
 @frappe.whitelist()
-def send_otp(doc_name= None):
+def ret_summary(ret_period= None):
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
-	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name) if doc_name else None
 	
 	#GST integration Details
 	user_name = gst_integration_settings.user_name
@@ -305,31 +300,68 @@ def send_otp(doc_name= None):
 	content_type = gst_integration_settings.content_type
 	
 	otp = gst_integration_settings.otp
-	saved_data = json.loads(doc.saved_headers) if doc else None
-	if saved_data:
-		requestid = saved_data.get('requestid')
-	else:
-		requestid = gst_integration_settings.requestid
+	requestid = random_string(randint(8,16))
 	
-	gstin = doc.company_gstin if doc else None
+	gstin = gst_integration_settings.gstin
+	state_code = gstin[:2]
 	
-	if gstin:
-		state_code = gstin[:2] 
-	else:
-		gstin = gst_integration_settings.gstin
-		state_code = gstin[:2]
-	
-	ret_period = gst_integration_settings.ret_period
-	if doc and doc.to_date:
-		ret_period = getdate(doc.to_date).strftime("%m%Y")
-	
-	pan = gst_integration_settings.pan
-	
-	if not all([user_name, base_url, content_type, requestid, gstin, ret_period, pan]):
+	ret_period = ret_period
+		
+	if not all([user_name, base_url, content_type, requestid, gstin, ret_period]):
 		frappe.throw("GST Details Missing")
 	
 	access_token = get_access_token(gst_integration_settings, base_url)
-	path = r"/test/enriched/authenticate"
+	path = "/enriched/returns/gstr1?action=RETSUM&gstin={}&ret_period={}".format(gstin, ret_period)
+	if gst_integration_settings.is_testing:
+		path = "/test/enriched/returns/gstr1?action=RETSUM&gstin={}&ret_period={}".format(gstin, ret_period)
+		
+	url = base_url + path
+	
+	headers = {
+		'username':  user_name,
+		'state-cd': state_code,
+		'otp': otp,
+		'Content-Type': content_type,
+		'requestid': requestid,
+		'gstin': gstin,
+		'ret_period': ret_period,
+		'Authorization': "Bearer " + access_token
+}
+	response = requests.request("GET", url, headers=headers)
+	
+	create_api_log(response, action= "RETSUM")
+	
+	if response.ok:
+		res = response.json()
+		if res.get("error_report"):
+			frappe.msgprint(json.dumps(res.get("error_report")), title= "Error Report")
+		else:
+			frappe.msgprint(response.text)
+			return response.text
+	else:
+		frappe.msgprint("Failed")
+
+@frappe.whitelist()
+def generate_otp():
+	gst_integration_settings = frappe.get_single('GST Integration Settings')
+	
+	#GST integration Details
+	user_name = gst_integration_settings.user_name
+	base_url = gst_integration_settings.base_url
+	content_type = gst_integration_settings.content_type
+	
+	requestid = random_string(randint(8,16))
+	
+	gstin = gst_integration_settings.gstin
+	state_code = gstin[:2]
+	
+	pan = gst_integration_settings.pan
+	
+	if not all([user_name, base_url, content_type, requestid, gstin, pan]):
+		frappe.throw("GST Details Missing")
+	
+	access_token = get_access_token(gst_integration_settings, base_url)
+	path = r"/enriched/authenticate"
 	if gst_integration_settings.is_testing:
 		path = r"/test/enriched/authenticate"
 		
@@ -344,16 +376,16 @@ def send_otp(doc_name= None):
 	headers = {
 		'username':  user_name,
 		'state-cd': state_code,
-		'otp': otp,
 		'Content-Type': content_type,
 		'requestid': requestid,
 		'gstin': gstin,
-		'ret_period': ret_period,
 		'Authorization': "Bearer " + access_token,
 		'pan': pan,
 		'st': 'EVC'
 }
-	response = requests.request("POST", url, params=params, headers=headers)
+	response = requests.request("GET", url, params=params, headers=headers)
+	
+	create_api_log(response, action= "authenticate")
 	
 	if response.ok:
 		return 1
@@ -362,37 +394,27 @@ def send_otp(doc_name= None):
 		frappe.throw(res.get('error_description'), title="Error")
 	
 @frappe.whitelist()
-def file_gstr1(otp, doc_name):
+def file_gstr1(ret_period, evc_otp):
 	gst_integration_settings = frappe.get_single('GST Integration Settings')
-	doc = frappe.get_doc("GSTR 1 Auto Filing", doc_name)
 	
 	#GST integration Details
 	user_name = gst_integration_settings.user_name
 	base_url = gst_integration_settings.base_url
 	content_type = gst_integration_settings.content_type
 	
-	saved_data = json.loads(doc.saved_headers)
-	requestid = saved_data.get('requestid')
+	requestid = random_string(randint(8,16))
 	
-	gstin = doc.company_gstin
-	
-	if gstin:
-		state_code = gstin[:2] 
-	else:
-		gstin = gst_integration_settings.gstin
-		state_code = gstin[:2]
-	
-	ret_period = gst_integration_settings.ret_period
-	if doc.to_date:
-		ret_period = getdate(doc.to_date).strftime("%m%Y")
-	
+	gstin = gst_integration_settings.gstin
 	pan = gst_integration_settings.pan
+	state_code = gstin[:2]
 	
-	print([user_name, base_url, content_type, requestid, gstin, ret_period, pan])
-	if not all([user_name, base_url, content_type, requestid, gstin, ret_period, pan]):
+	ret_period = ret_period
+		
+	if not all([user_name, base_url, content_type, requestid, gstin, ret_period]):
 		frappe.throw("GST Details Missing")
 	
 	access_token = get_access_token(gst_integration_settings, base_url)
+	
 	path = r"/enriched/returns/gstr1?action=RETFILE"
 	if gst_integration_settings.is_testing:
 		path = r"/test/enriched/returns/gstr1?action=RETFILE"
@@ -409,16 +431,12 @@ def file_gstr1(otp, doc_name):
 		'Authorization': "Bearer " + access_token,
 		'pan': pan,
 		'st': 'EVC',
-		'evcotp': otp
-		
-		
+		'evcotp': evc_otp
 	}
-	
-	# import pdb; pdb.set_trace()
 	
 	response = requests.request("POST", url, headers=headers)
 	
-	# import pdb; pdb.set_trace()
+	create_api_log(response, action= "RETFILE")
 	
 	if response.ok:
 		headers.pop('Authorization')
@@ -427,10 +445,6 @@ def file_gstr1(otp, doc_name):
 		if res:
 			if res.get('status') == 200:
 				return {
-					"headers" : json.dumps(headers),
-					"res" : json.dumps(res),
-					"status" : "Succesfully Filed",
-					"reference_id" : res.get('result').get("reference_id") if res.get('result') else "",
 					"msg": res.get('message')
 				}
 			else:
@@ -438,6 +452,4 @@ def file_gstr1(otp, doc_name):
 	else:
 		res = response.json()
 		frappe.throw(res.get('error_description'), title="Error")
-	
-	
 	

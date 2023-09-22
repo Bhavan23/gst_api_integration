@@ -3,11 +3,15 @@
 
 frappe.ui.form.on('GST Integration Settings', {
 	refresh: function(frm) {
+		if (cur_frm.doc.is_testing){
+			frm.set_intro(__("575757 is Testing OTP"));		
+		}
+
 		if (!cur_frm.doc.is_testing) {
 			frm.add_custom_button(__('GET OTP'), () => {
 				frappe.call(
 					{
-						method: "gst_api_integration.gst_api_integration.doctype.gstr_1_auto_filing.gstr_1_auto_filing.send_otp",
+						method: "gst_api_integration.gst_api_integration.doctype.gstr_1_report.gstr_1_report.generate_otp",
 						callback: (r) => {
 							if (r.message === 1) {
 								frappe.show_alert({ message: __("An OTP sent to registered mobile number/email. Please provide OTP"), indicator: "green" })
@@ -16,7 +20,7 @@ frappe.ui.form.on('GST Integration Settings', {
 						async: false
 					}
 				)
-			}, __("Actions"))
+			})
 		}
 	},
 	is_testing: function(frm){

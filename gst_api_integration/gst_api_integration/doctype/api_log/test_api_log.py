@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestGSTR1AutoFiling(FrappeTestCase):
+class TestApiLog(FrappeTestCase):
 	pass

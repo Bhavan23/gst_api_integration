@@ -29,8 +29,8 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_js = {"GSTR 3B Report" : "public/js/gstr_3b_report.js"}
+doctype_list_js = {"GSTR 3B Report": "public/js/gstr_3b_report_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -64,7 +64,7 @@ app_license = "MIT"
 # ------------
 
 # before_install = "gst_api_integration.install.before_install"
-# after_install = "gst_api_integration.install.after_install"
+after_install = "gst_api_integration.gst_api_integration.create_defaults"
 
 # Uninstallation
 # ------------

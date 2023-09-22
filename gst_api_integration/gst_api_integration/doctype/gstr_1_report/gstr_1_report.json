@@ -46,6 +46,8 @@
    "options": "Address"
   },
   {
+   "fetch_from": "company_address.gstin",
+   "fetch_if_empty": 1,
    "fieldname": "company_gstin",
    "fieldtype": "Data",
    "label": "Company GSTIN"
@@ -165,7 +167,7 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "GSTR-1 Auto Filing",
+   "options": "GSTR 1 Report",
    "print_hide": 1,
    "read_only": 1
   }
@@ -173,10 +175,10 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-07 15:05:51.129776",
+ "modified": "2023-09-12 10:55:04.083233",
  "modified_by": "Administrator",
  "module": "Gst Api Integration",
- "name": "GSTR 1 Auto Filing",
+ "name": "GSTR 1 Report",
  "name_case": "Title Case",
  "owner": "Administrator",
  "permissions": [
