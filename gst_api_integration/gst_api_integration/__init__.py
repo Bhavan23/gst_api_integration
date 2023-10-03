@@ -1,7 +1,7 @@
 import frappe
 
 GST_WORKFLOW_STATES = [
-	{'workflow_state_name': 'Draft', 'style': 'Warning'},
+	{'workflow_state_name': 'Pending', 'style': 'Warning'},
     {'workflow_state_name': 'Saved', 'style': 'Primary'},
 	{'workflow_state_name': 'Verified','style': 'Success'},
 ]
@@ -40,10 +40,10 @@ def create_workflow(document_name):
 		
 		states = [
 			{
-				'state': 'Draft',
+				'state': 'Pending',
 				'doc_status': 0,
 				'update_field': 'workflow_state',
-				'update_value': '',
+				'update_value': 'Pending',
 				'allow_edit': 'System manager'
 			},
 			{
@@ -65,7 +65,7 @@ def create_workflow(document_name):
 		
 		transitions = [
 			{ 
-				'state': 'Draft',
+				'state': 'Pending',
 				'action': 'Save',
 				'allow_self_approval': 0,
 				'next_state': 'Saved',
@@ -75,14 +75,14 @@ def create_workflow(document_name):
 				'state': 'Saved',
 				'action': 'Approve',
 				'allow_self_approval': 0,
-				'next_state': 'Saved',
+				'next_state': 'Verified',
 				'allowed': 'System Manager'
 			},
 			{ 
 				'state': 'Saved',
 				'action': 'Reject',
 				'allow_self_approval': 0,
-				'next_state': 'Draft',
+				'next_state': 'Pending',
 				'allowed': 'System Manager'
 			}
 		]

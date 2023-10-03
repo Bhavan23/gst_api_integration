@@ -14,7 +14,7 @@ frappe.ui.form.on('GSTR 3B Report', {
 		}
 	},
 	before_workflow_action: function (frm) {
-		if (frm.doc.workflow_state == "Draft") {
+		if (frm.doc.workflow_state == "Pending") {
 			if (cur_frm.doc.json_output) {
 				frappe.call(
 					{
@@ -34,7 +34,7 @@ frappe.ui.form.on('GSTR 3B Report', {
 		}
 	},
 	after_workflow_action: function (frm) {
-		if (frm.doc.workflow_state == "Draft") {
+		if (frm.doc.workflow_state == "Pending") {
 			cur_frm.set_value('saved_headers', '{}').then(cur_frm.set_value('saved_response', '{}')).then(cur_frm.set_value('status', '')).then(cur_frm.save())
 		}
 
