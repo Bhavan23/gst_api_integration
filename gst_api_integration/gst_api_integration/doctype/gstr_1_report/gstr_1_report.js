@@ -35,6 +35,13 @@ frappe.ui.form.on('GSTR 1 Report', {
 						args: { "json_file": frm.doc.json_file, "gstin": frm.doc.company_gstin, "to_date": frm.doc.to_date },
 						callback: (r) => {
 							if (r.message) {
+								if (res.message == 'RETOTPREQUEST'){
+									frappe.throw({
+										message:'An OTP sent to registered mobile number/email. Please provide OTP',
+										title: 'In just 10 minutes, OTP expired.'}
+										)		
+										return	1
+								}
 								cur_frm.set_value('saved_headers', r.message.headers)
 								cur_frm.set_value('saved_response', r.message.res)
 								cur_frm.set_value('status', r.message.status)

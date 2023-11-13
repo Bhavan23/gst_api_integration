@@ -74,7 +74,7 @@ def save_gstr3b(json_file, month, year):
 		
 	url = base_url + path
 	
-	payload = json_file
+	payload = json.loads(json_file)
 	
 	headers = {
 		'username':  user_name,
@@ -87,16 +87,16 @@ def save_gstr3b(json_file, month, year):
 		'Authorization': "Bearer " + access_token
 }
 	
-	response = requests.request("PUT", url, headers=headers, data= payload)
+	response = requests.request("PUT", url, headers=headers, data= json.dumps(payload))
 	
 	create_api_log(response, action= "RETSAVE")
 	
 	if response.ok:
 		res = response.json()
-		headers.pop('Authorization')
-		headers.pop('otp')
 		if res:
 			if res.get('status') == 200:
+				if res.get('errorCode') == 'RETOTPREQUEST':
+					return "RETOTPREQUEST"
 				return {'headers': json.dumps(headers), 'res' : json.dumps(res), 'status': 'Saved Successfully', 'msg': res.get('message')}
 			else:
 				return {'headers': json.dumps(headers), 'res' : json.dumps(res), 'status': 'Failed', 'msg': res.get('message')}
@@ -161,6 +161,7 @@ def gstr3b_status(doc_name):
 		res = response.json()
 		if res.get("error_report"):
 			frappe.msgprint(json.dumps(res.get("error_report")), title= "Error Report")
+			frappe.msgprint(json.dumps(res), title=res.get('status_cd'))
 		else:
 			frappe.msgprint(response.text)
 	else:
@@ -216,8 +217,6 @@ def submit_gstr3b(ret_period= None):
 	create_api_log(response, action= "RETSUBMIT")
 	
 	if response.ok:
-		headers.pop('Authorization')
-		headers.pop('otp')
 		res = response.json()
 		if res:
 			if res.get('status') == 200:
@@ -333,8 +332,6 @@ def file_gstr3b(ret_period):
 	create_api_log(response, action= "RETFILE")
 	
 	if response.ok:
-		headers.pop('Authorization')
-		res = response.json()
 		if res:
 			if res.get('status') == 200:
 				return {

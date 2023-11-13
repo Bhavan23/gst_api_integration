@@ -13,9 +13,9 @@ if get_versions().get("erpnext"):
 		
 import json
 import requests
-from frappe.utils import getdate
+from frappe.utils import getdate, random_string, get_datetime_str
 
-from frappe.utils import random_string
+import datetime
 from random import randint
 
 from gst_api_integration.gst_api_integration.doctype.api_log.api_log import create_api_log
@@ -57,7 +57,7 @@ class GSTR1Report(Document):
 			new_datas = []
 			
 			if not datas:
-				frappe.msgprint("For the specified time period, no records were found!", title= "No Data")
+				frappe.throw("For the specified time period, no records were found!", title= "No Data")
 				if not self.json_file:
 					self.json_file = "{}"
 				return
@@ -71,6 +71,9 @@ class GSTR1Report(Document):
 			else:
 				new_datas = datas
 				
+			self.convert_date_to_str(new_datas)
+
+			json_data = None
 			try:
 				json_data = get_json(data= json.dumps(new_datas),	report_name= 'GSTR-1', filters= json.dumps(filters))
 			except KeyError as e:
@@ -79,8 +82,14 @@ class GSTR1Report(Document):
 				frappe.throw(str(e), "Error")
 			
 		if not self.json_file or self.json_file == "{}":
-			self.json_file = json.dumps(json_data.get("data"))
+			if json_data:
+				self.json_file = json.dumps(json_data.get("data"))
 			
+	def convert_date_to_str(self, datas):
+		for data in datas:
+			for key in data:
+				if type(data.get(key)) is datetime.date:
+					data[key] = get_datetime_str(data.get(key))
 			
 #access token
 def get_access_token(gst_integration_settings= None, base_url= None, id= None, key= None):
@@ -150,14 +159,14 @@ def save_gstr1(json_file, gstin = None, to_date = None):
 		'Authorization': "Bearer " + access_token
 }
 
-	response = requests.request("PUT", url, headers=headers, data= payload)
+	response = requests.request("PUT", url, headers=headers, data= json.dumps(payload))
 	
 	create_api_log(response, action= "RETSAVE")
 	
 	if response.ok:
 		res = response.json()
-		headers.pop('Authorization')
-		headers.pop('otp')
+		if res.get('errorCode') == 'RETOTPREQUEST':
+			return "RETOTPREQUEST"
 		if res:
 			if res.get('status') == 200:
 				return {'headers': json.dumps(headers), 'res' : json.dumps(res), 'status': 'Saved Successfully', 'msg': res.get('message')}
@@ -220,7 +229,7 @@ def gstr1_status(doc_name):
 	if response.ok:
 		res = response.json()
 		if res.get('error_report'):
-			frappe.msgprint(res.get('error_report').get('error_msg'), title= res.get('status_cd')+ ' - ' + res.get('error_report').get('error_cd'))
+			frappe.msgprint(json.dumps(res), title= res.get('status_cd'))
 		else:
 			frappe.msgprint(response.text, res.get('status_cd'))
 	else:
@@ -276,8 +285,6 @@ def proceed_to_file(ret_period= None):
 	create_api_log(response, action= "RETNEWPTF")
 	
 	if response.ok:
-		headers.pop('Authorization')
-		headers.pop('otp')
 		res = response.json()
 		if res:
 			if res.get('status') == 200:
@@ -439,8 +446,6 @@ def file_gstr1(ret_period, evc_otp):
 	create_api_log(response, action= "RETFILE")
 	
 	if response.ok:
-		headers.pop('Authorization')
-		headers.pop('evcotp')
 		res = response.json()
 		if res:
 			if res.get('status') == 200:
