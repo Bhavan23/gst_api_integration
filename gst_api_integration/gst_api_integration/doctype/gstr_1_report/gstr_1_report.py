@@ -17,6 +17,7 @@ from frappe.utils import getdate, random_string, get_datetime_str
 
 import datetime
 from random import randint
+from frappe.model.naming import parse_naming_series
 
 from gst_api_integration.gst_api_integration.doctype.api_log.api_log import create_api_log
 
@@ -32,7 +33,7 @@ class GSTR1Report(Document):
 			"NIL RATED/EXEMPTED Invoices": "NIL Rated"
 		}
 	def autoname(self):
-		self.name =  "GSTR1-"+ self.field_map.get(self.type_of_business)+"-"+self.from_date+"-"+self.to_date
+		self.name = parse_naming_series("GSTR1-"+ self.field_map.get(self.type_of_business)+"-"+self.from_date+"-"+self.to_date + "-.####")
 	
 	def validate(self):
 		#validate date
@@ -42,7 +43,7 @@ class GSTR1Report(Document):
 		
 	def before_save(self):
 		#validate existing document 
-		if self.is_new():
+		if self.is_new() and not self.is_from_report:
 			if self.from_date:
 				exists = frappe.db.exists("GSTR 1 Report", {"to_date": ["between",[ self.from_date, self.to_date]], "type_of_business": self.type_of_business})
 				if exists:
@@ -70,7 +71,7 @@ class GSTR1Report(Document):
 					new_datas.append({})
 			else:
 				new_datas = datas
-				
+			
 			self.convert_date_to_str(new_datas)
 
 			json_data = None
@@ -81,7 +82,7 @@ class GSTR1Report(Document):
 			except Exception as e:
 				frappe.throw(str(e), "Error")
 			
-		if not self.json_file or self.json_file == "{}":
+		if not self.json_file or self.json_file == "{}" and not self.is_from_report:
 			if json_data:
 				self.json_file = json.dumps(json_data.get("data"))
 			

@@ -2,7 +2,6 @@
  "actions": [],
  "allow_rename": 1,
  "creation": "2023-08-22 12:39:32.184101",
- "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -30,6 +29,7 @@
   "reference_id",
   "section_break_kpytb",
   "status",
+  "is_from_report",
   "amended_from"
  ],
  "fields": [
@@ -170,12 +170,19 @@
    "options": "GSTR 1 Report",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_from_report",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "From Report"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-12 10:55:04.083233",
+ "modified": "2023-11-14 18:11:38.567072",
  "modified_by": "Administrator",
  "module": "Gst Api Integration",
  "name": "GSTR 1 Report",
@@ -197,6 +204,5 @@
  ],
  "quick_entry": 1,
  "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+ "sort_order": "DESC"
 }
