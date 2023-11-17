@@ -37,17 +37,28 @@ def execute(filters=None):
 	invoices = []
 	if not datas: return
 	if isinstance(datas[0],list) or isinstance(datas[0],tuple):
+		action = filters.get('type_of_business')
 		if filters.get('posted') or filters.get('not_posted'):
-			invoices = get_posted_invoices(to_date=filters.get('to_date'), action= filters.get('type_of_business')) or []
+			invoices = get_posted_invoices(to_date=filters.get('to_date'), action= action) or []
 		for data in datas:
 			if filters.get('posted'):
 				d = {column.get('fieldname'): data[i] for i, column in enumerate(columns)}
-				if d.get('invoice_number') in invoices:
-					new_datas.append(d)
+				if action == 'B2B':
+					if d.get('invoice_number') in invoices:
+						new_datas.append(d)
+				if action == 'CDNR-REG':
+					if d.get('invoice_number') in invoices:
+						new_datas.append(d)
+
 			elif filters.get('not_posted'):
 				d = {column.get('fieldname'): data[i] for i, column in enumerate(columns)}
-				if d.get('invoice_number') not in invoices:
-					new_datas.append(d)
+				if action == 'B2B':
+					if d.get('invoice_number') not in invoices:
+						new_datas.append(d)
+				if action == 'CDNR-REG':
+					if d.get('invoice_number') not in invoices:
+						new_datas.append(d)
+
 			else:
 				d = {column.get('fieldname') : data[i]  for i, column in enumerate(columns) }
 				new_datas.append(d)
@@ -115,10 +126,14 @@ def get_posted_invoices(to_date=None, action= None):
 			frappe.throw('<b style= "color: red;padding-bottom:10px">Your OTP has Expired</b><br>An OTP sent to registered mobile number/email. Please provide OTP','In just 10 minutes, OTP expired.')
 			
 		invoices = []
-		if res.get('b2b'):
-			for b2b in res['b2b']:
-				for data in b2b.get('inv'):
-					invoices.append(data.get('inum'))
+		if res.get(action.lower()):
+			for ret_data in res[action.lower()]:
+				if action.lower() == 'b2b':
+					for data in ret_data.get('inv'):
+						invoices.append(data.get('inum'))
+				if action.lower() == 'cdnr':
+					for data in ret_data.get('nt'):
+						invoices.append(data.get('nt_num'))
 	else:
 		frappe.throw(response.text)
 		
