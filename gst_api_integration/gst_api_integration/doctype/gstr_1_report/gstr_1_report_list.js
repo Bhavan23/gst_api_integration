@@ -21,6 +21,10 @@ frappe.listview_settings["GSTR 1 Report"] = {
 			},
 		__("Actions"));
 		
+		listview.page.add_inner_button(__("GSTR1 - Report"), () => {
+			frappe.set_route("query-report", "GSTR-1-Custom");
+		});
+		
 		listview.page.add_inner_button(__("RETSUMMARY"), () => {
 			frappe.prompt({
 				fieldtype: 'Data',

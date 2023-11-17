@@ -149,6 +149,10 @@ frappe.query_reports["GSTR-1-Custom"] = {
 				}
 			});
 		});
+		
+		report.page.add_inner_button(__("GSTR1 - Report List"), function () {
+			frappe.set_route("Form", "GSTR 1 Report");
+		});
 	}
 }
 

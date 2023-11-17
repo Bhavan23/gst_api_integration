@@ -35,6 +35,7 @@ def execute(filters=None):
 	
 	new_datas = []
 	invoices = []
+	if not datas: return
 	if isinstance(datas[0],list) or isinstance(datas[0],tuple):
 		if filters.get('posted') or filters.get('not_posted'):
 			invoices = get_posted_invoices(to_date=filters.get('to_date'), action= filters.get('type_of_business')) or []
