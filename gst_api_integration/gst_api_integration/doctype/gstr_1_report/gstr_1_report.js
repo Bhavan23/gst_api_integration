@@ -39,7 +39,7 @@ frappe.ui.form.on('GSTR 1 Report', {
 									frappe.throw({
 										message:'<b style= "color: red;padding-bottom:10px">Your OTP has Expired</b><br>An OTP sent to registered mobile number/email. Please provide OTP',
 										title: 'In just 10 minutes, OTP expired.'}
-										)		
+										)
 										return	1
 								}
 								cur_frm.set_value('saved_headers', r.message.headers)
@@ -54,10 +54,6 @@ frappe.ui.form.on('GSTR 1 Report', {
 		}
 	},
 	after_workflow_action: function (frm) {
-		if (frm.doc.workflow_state == "Pending"){
-			cur_frm.set_value('saved_headers', '{}').then(cur_frm.set_value('saved_response', '{}')).then(cur_frm.set_value('status', '')).then(cur_frm.save())
-		}
-		
 		if (frm.doc.status == "Saved Successfully" && !cur_frm.doc.docstatus && !cur_frm.__islocal) {
 			frappe.msgprint("GSTR1 saved successfully", "Status:[200]")
 		}
