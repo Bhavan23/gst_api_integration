@@ -32,7 +32,7 @@ frappe.ui.form.on('GSTR 1 Report', {
 				frappe.call(
 					{
 						method: "gst_api_integration.gst_api_integration.doctype.gstr_1_report.gstr_1_report.save_gstr1",
-						args: { "json_file": frm.doc.json_file, "gstin": frm.doc.company_gstin, "to_date": frm.doc.to_date },
+						args: { "doc_name": cur_frm.doc.name, "json_file": frm.doc.json_file, "gstin": frm.doc.company_gstin, "to_date": frm.doc.to_date },
 						callback: (r) => {
 							if (r.message) {
 								if (r.message == 'RETOTPREQUEST'){
@@ -42,9 +42,6 @@ frappe.ui.form.on('GSTR 1 Report', {
 										)
 										return	1
 								}
-								cur_frm.set_value('saved_headers', r.message.headers)
-								cur_frm.set_value('saved_response', r.message.res)
-								cur_frm.set_value('status', r.message.status)
 							}
 						},
 						async: false
