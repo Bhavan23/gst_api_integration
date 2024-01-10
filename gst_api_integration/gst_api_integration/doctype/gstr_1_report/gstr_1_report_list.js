@@ -20,11 +20,11 @@ frappe.listview_settings["GSTR 1 Report"] = {
 				}, __("Submited record can't be edit"), __('Submit'))
 			},
 		__("Actions"));
-		
+
 		listview.page.add_inner_button(__("GSTR1 - Report"), () => {
 			frappe.set_route("query-report", "GSTR-1-Custom");
 		});
-		
+
 		listview.page.add_inner_button(__("RETSUMMARY"), () => {
 			frappe.prompt({
 				fieldtype: 'Data',
@@ -45,7 +45,7 @@ frappe.listview_settings["GSTR 1 Report"] = {
 			}, __("Check return summary"), __('View'))
 			},
 		__("Actions"));
-		
+
 		listview.page.add_inner_button(__("EVC FILE"), () => {
 			frappe.call({
 				method: "gst_api_integration.gst_api_integration.doctype.gstr_1_report.gstr_1_report.generate_otp",
@@ -58,7 +58,7 @@ frappe.listview_settings["GSTR 1 Report"] = {
 							description: "FORMAT : {month}{year}<br>EXAMPLE: 092023"
 							},
 							{
-								fieldtype: "Int",
+								fieldtype: "Data",
 								label: __("Enter Your OTP"),
 								fieldname: "otp",
 								reqd: 1
@@ -68,7 +68,7 @@ frappe.listview_settings["GSTR 1 Report"] = {
 									freeze: true,
 									args: {
 										ret_period: data.ret_period,
-										evc_otp: data.otp 
+										evc_otp: data.otp
 									},
 									callback: (r) => {
 										frappe.show_alert({ message: __(r.message.msg), indicator: r.message.status === 'Failed' ? "red" : "green" }, 7);
