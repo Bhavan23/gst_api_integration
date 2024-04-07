@@ -17,15 +17,24 @@ frappe.query_reports["GSTR-2-Custom"] = {
 			"label": __("From Date"),
 			"fieldtype": "Date",
 			"reqd": 1,
-			"default": frappe.datetime.add_months(frappe.datetime.get_today(), -3),
-			"width": "80"
+			"default": frappe.datetime.add_months(frappe.datetime.get_today(), -1),
+			"width": "80",
+			change: function(){
+				var from_date = new Date(frappe.query_report.get_filter_value('from_date')); 
+
+				var year = from_date.getFullYear()
+				var month = from_date.getMonth(); 
+
+				var to_date = new Date(year, month + 1, 0);
+
+				frappe.query_report.set_filter_value('to_date', to_date)
+			}
 		},
 		{
 			"fieldname":"to_date",
 			"label": __("To Date"),
 			"fieldtype": "Date",
-			"reqd": 1,
-			"default": frappe.datetime.get_today()
+			"read_only": 1
 		},
 		{
 			"fieldname":"type_of_business",
@@ -36,14 +45,19 @@ frappe.query_reports["GSTR-2-Custom"] = {
 			"default": "B2B"
 		},
 		{
-			"fieldname":"filed",
-			"label": __("Filed only"),
-			"fieldtype": "Check"
+			"fieldname":"record_from",
+			"label": __("Show"),
+			"fieldtype": "Select",
+			"default": "System Data",
+			"options":['', 'System Data', 'Portal Data']
 		},
 		{
-			"fieldname":"not_filed",
-			"label": __("Not Filed Only"),
-			"fieldtype": "Check"
+			"fieldname":"filed",
+			"label": __("Filed"),
+			"fieldtype": "Check",
+			change: function(){
+				frappe.query_report.set_filter_value('record_from', '')
+			},
 		}
 	]
 };
