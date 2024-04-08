@@ -18,11 +18,11 @@ ACTIONS = {
 	}
 
 def execute(filters=None):
-	try:
-		columns, datas = Gstr2Report(filters).run()
-	except Exception as e:
-		if "no attribute 'tax_details'" in cstr(e):
-			frappe.throw("Selct Different Date", title= "Invalid Date")
+	# try:
+	columns, datas = Gstr2Report(filters).run()
+	# except Exception as e:
+	# 	if "no attribute 'tax_details'" in cstr(e):
+	# 		frappe.throw("Selct Different Date", title= "Invalid Date")
 
 	action = ACTIONS.get(filters.get('type_of_business'))
 	
@@ -146,10 +146,9 @@ def get_portal_data(filters, action):
 		"GET", url, params=params, headers=headers )
 
 	create_api_log(response, action="GSTR2 " + action)
-
 	if response.ok:
 		res = response.json()
-		if cint(res.get('status')) == 200:
+		if cint(response.status_code) == 200:
 			return res.get(action.lower())
 		else:
 			frappe.msgprint(res.get('message'), title="BAD Response")
