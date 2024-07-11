@@ -33,6 +33,8 @@ ACTIONS = {
 }
 
 def execute(filters=None):
+	if not (filters.get("company") and filters.get('company_address') and filters.get('company_gstin')):
+		return [], []
 	columns, datas =  Gstr1Report(filters).run()
 
 	new_datas = []
