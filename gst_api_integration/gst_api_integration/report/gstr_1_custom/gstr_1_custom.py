@@ -47,14 +47,14 @@ def execute(filters=None):
 				d = {column.get('fieldname'): data[i] for i, column in enumerate(columns)}
 				if action == 'B2B':
 					if d.get('invoice_number') in invoices:
-						if not filter.get('include_fuel_invoices'):
+						if not filters.get('include_fuel_invoices'):
 							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
 								new_datas.append(d)
 						else:
 							new_datas.append(d)
 				if action == 'CDNR-REG':
 					if d.get('invoice_number') in invoices:
-						if not filter.get('include_fuel_invoices'):
+						if not filters.get('include_fuel_invoices'):
 							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
 								new_datas.append(d)
 						else:
@@ -64,14 +64,14 @@ def execute(filters=None):
 				d = {column.get('fieldname'): data[i] for i, column in enumerate(columns)}
 				if action == 'B2B':
 					if d.get('invoice_number') not in invoices:
-						if not filter.get('include_fuel_invoices'):
+						if not filters.get('include_fuel_invoices'):
 							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
 								new_datas.append(d)
 						else:
 							new_datas.append(d)
 				if action == 'CDNR-REG':
 					if d.get('invoice_number') not in invoices:
-						if not filter.get('include_fuel_invoices'):
+						if not filters.get('include_fuel_invoices'):
 							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
 								new_datas.append(d)
 						else:
@@ -80,7 +80,7 @@ def execute(filters=None):
 			else:
 				d = {column.get('fieldname') : data[i]  for i, column in enumerate(columns) }
 				if d.get('invoice_number'):
-					if not filter.get('include_fuel_invoices'):
+					if not filters.get('include_fuel_invoices'):
 						if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
 							new_datas.append(d)
 					else:
