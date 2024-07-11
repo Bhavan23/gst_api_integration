@@ -47,23 +47,44 @@ def execute(filters=None):
 				d = {column.get('fieldname'): data[i] for i, column in enumerate(columns)}
 				if action == 'B2B':
 					if d.get('invoice_number') in invoices:
-						new_datas.append(d)
+						if not filter.get('include_fuel_invoices'):
+							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
+								new_datas.append(d)
+						else:
+							new_datas.append(d)
 				if action == 'CDNR-REG':
 					if d.get('invoice_number') in invoices:
-						new_datas.append(d)
+						if not filter.get('include_fuel_invoices'):
+							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
+								new_datas.append(d)
+						else:
+							new_datas.append(d)
 
 			elif filters.get('not_posted'):
 				d = {column.get('fieldname'): data[i] for i, column in enumerate(columns)}
 				if action == 'B2B':
 					if d.get('invoice_number') not in invoices:
-						new_datas.append(d)
+						if not filter.get('include_fuel_invoices'):
+							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
+								new_datas.append(d)
+						else:
+							new_datas.append(d)
 				if action == 'CDNR-REG':
 					if d.get('invoice_number') not in invoices:
-						new_datas.append(d)
+						if not filter.get('include_fuel_invoices'):
+							if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
+								new_datas.append(d)
+						else:
+							new_datas.append(d)
 
 			else:
 				d = {column.get('fieldname') : data[i]  for i, column in enumerate(columns) }
-				new_datas.append(d)
+				if d.get('invoice_number'):
+					if not filter.get('include_fuel_invoices'):
+						if not any(d.get('invoice_number', '').startswith(prefix) for prefix in ["FSINV-", "BPSI-", "IOSI-", "JISI-"]):
+							new_datas.append(d)
+					else:
+						new_datas.append(d)
 	else:
 		new_datas = datas
 

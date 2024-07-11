@@ -75,6 +75,11 @@ frappe.query_reports["GSTR-1-Custom"] = {
 			"fieldname": "posted",
 			"label": __("Posted Only"),
 			"fieldtype": "Check"
+		},
+		{
+			"fieldname": "include_fuel_invoices",
+			"label": __("Include Fuel Invoices"),
+			"fieldtype": "Check"
 		}
 	],
 	after_datatable_render: table_instance => {
