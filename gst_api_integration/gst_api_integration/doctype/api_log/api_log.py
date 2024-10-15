@@ -24,11 +24,11 @@ def create_api_log(res, action= None, submit= False):
 	log_doc.action = action
 	log_doc.url = res.request.url
 	log_doc.method = res.request.method
-	log_doc.header = json.dumps(dict(res.request.headers))
+	log_doc.header = json.dumps(dict(res.request.headers),indent=4, sort_keys=True)
 	log_doc.payload =res.request.body
-	log_doc.response = json.dumps(res.json())
+	log_doc.response = json.dumps(res.json(),indent=4, sort_keys=True)
 	log_doc.status_code = res.status_code
-	log_doc.save()
+	log_doc.insert()
 	
 	if submit:log_doc.submit()
 	

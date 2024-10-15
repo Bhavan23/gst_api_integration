@@ -7,12 +7,11 @@ from datetime import date
 
 import frappe
 from frappe import _
+import time
 import json
 import requests
 from frappe.utils import flt, formatdate, getdate, get_datetime_str, cstr
-from six import iteritems
-
-from erpnext.regional.india.utils import get_gst_accounts
+from datetime import datetime, timedelta
 
 from random import randint
 from frappe.utils import getdate, random_string, get_datetime_str
@@ -22,7 +21,7 @@ from erpnext.regional.report.gstr_1.gstr_1 import Gstr1Report
 
 
 ACTIONS = {
-    "B2B": "B2B",
+	"B2B": "B2B",
  	"B2C Large": "B2CL",
 	"B2C Small": "B2CS",
  	"CDNR-REG": "CDNR",
@@ -43,7 +42,7 @@ def execute(filters=None):
 	if isinstance(datas[0],list) or isinstance(datas[0],tuple):
 		action = filters.get('type_of_business')
 		if filters.get('posted') or filters.get('not_posted'):
-			invoices = get_posted_invoices(to_date=filters.get('to_date'), action= action) or []
+			invoices = get_posted_invoices(from_date=filters.get('from_date'),to_date=filters.get('to_date'), action= action) or []
 		for data in datas:
 			if filters.get('posted'):
 				d = {column.get('fieldname'): data[i] for i, column in enumerate(columns)}
@@ -92,7 +91,7 @@ def execute(filters=None):
 
 	return columns, new_datas
 
-def get_posted_invoices(to_date=None, action= None):
+def get_posted_invoices(from_date,to_date, action= None):
 	if not action:
 		return
 
@@ -106,63 +105,64 @@ def get_posted_invoices(to_date=None, action= None):
 	content_type = gst_integration_settings.content_type
 
 	otp = gst_integration_settings.otp
-	requestid = random_string(randint(10, 18))
 
 	gstin = gst_integration_settings.gstin
 	state_code = gstin[:2]
 
-	ret_period = getdate(to_date).strftime("%m%Y")
-
-	if not all([user_name, base_url, content_type, requestid, gstin, ret_period]):
-		frappe.throw("GST Details Missing")
-
 	access_token = get_access_token(gst_integration_settings, base_url)
 
-	path = "/enriched/returns/gstr1"
-	if gst_integration_settings.is_testing:
-		path = "/test/enriched/returns/gstr1"
+	ret_period_list=generate_ret_periods(
+		from_date=from_date,
+		to_date=to_date
+	)
+	invoices = []
+	for ret_period in ret_period_list:
+		requestid = random_string(randint(10, 18))
+		if not all([user_name, base_url, content_type, requestid, gstin, ret_period]):
+			frappe.throw("GST Details Missing")
 
-	url = base_url + path
+		path = "/enriched/returns/gstr1"
+		if gst_integration_settings.is_testing:
+			path = "/test/enriched/returns/gstr1"
 
-	params = {
-		"action": cstr(action).upper(),
-		"gstin": gstin,
-		"ret_period": ret_period
-	}
+		url = base_url + path
 
-	headers = {
-            'username':  user_name,
-			'state-cd': state_code,
-			'otp': otp,
-			'Content-Type': content_type,
-			'requestid': requestid,
-			'gstin': gstin,
-			'ret_period': ret_period,
-			'Authorization': "Bearer " + access_token
-        }
+		params = {
+			"action": cstr(action).upper(),
+			"gstin": gstin,
+			"ret_period": ret_period
+		}
 
-	response = requests.request("GET", url, params=params, headers=headers)
+		headers = {
+				'username':  user_name,
+				'state-cd': state_code,
+				'otp': otp,
+				'Content-Type': content_type,
+				'requestid': requestid,
+				'gstin': gstin,
+				'ret_period': ret_period,
+				'Authorization': "Bearer " + access_token
+			}
+		response = requests.request("GET", url, params=params, headers=headers)
 
-	create_api_log(response, action= cstr(action).upper())
+		create_api_log(response, action= cstr(action).upper())
 
-	if response.ok:
-		res = response.json()
-		if res.get('errorCode') == 'RETOTPREQUEST':
-			frappe.throw('<b style= "color: red;padding-bottom:10px">Your OTP has Expired</b><br>An OTP sent to registered mobile number/email. Please provide OTP','In just 10 minutes, OTP expired.')
+		if response.ok:
+			res = response.json()
+			if res.get('errorCode') == 'RETOTPREQUEST':
+				frappe.throw('<b style= "color: red;padding-bottom:10px">Your OTP has Expired</b><br>An OTP sent to registered mobile number/email. Please provide OTP','In just 10 minutes, OTP expired.')
 
-		invoices = []
-		if res.get(action.lower()):
-			for ret_data in res[action.lower()]:
-				if action.lower() == 'b2b':
-					for data in ret_data.get('inv'):
-						invoices.append(data.get('inum'))
-				if action.lower() == 'cdnr':
-					for data in ret_data.get('nt'):
-						invoices.append(data.get('nt_num'))
-	else:
-		frappe.throw(response.text)
-
-	return set(invoices)
+			if res.get(action.lower()):
+				for ret_data in res[action.lower()]:
+					if action.lower() == 'b2b':
+						for data in ret_data.get('inv'):
+							invoices.append(data.get('inum'))
+					if action.lower() == 'cdnr':
+						for data in ret_data.get('nt'):
+							invoices.append(data.get('nt_num'))
+		else:
+			frappe.throw(response.text)
+	return list(set(invoices))
 
 @frappe.whitelist(allow_guest = True)
 def create_record(datas, filters):
@@ -215,3 +215,22 @@ def convert_date_to_str(datas):
 		for key in data:
 			if type(data.get(key)) is date:
 				data[key] = get_datetime_str(data.get(key))
+
+
+def generate_ret_periods(from_date, to_date):
+	from_date = datetime.strptime(from_date, "%Y-%m-%d")
+	to_date = datetime.strptime(to_date, "%Y-%m-%d")
+	
+	ret_periods = []
+	
+	# Loop through each month in the date range
+	while from_date <= to_date:
+		# Get the ret_period for the current month
+		ret_period = from_date.strftime("%m%Y")
+		ret_periods.append(ret_period)
+		
+		# Move to the first day of the next month
+		next_month = from_date.replace(day=28) + timedelta(days=4)  # This gets us into the next month
+		from_date = next_month.replace(day=1)  # Set day to 1 for the new month
+	
+	return ret_periods
