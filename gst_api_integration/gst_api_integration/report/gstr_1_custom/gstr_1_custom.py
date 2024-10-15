@@ -38,7 +38,9 @@ def execute(filters=None):
 
 	new_datas = []
 	invoices = []
-	if not datas: return
+	if not datas:
+		return columns, [], ["There is no data available for the given period."]
+
 	if isinstance(datas[0],list) or isinstance(datas[0],tuple):
 		action = filters.get('type_of_business')
 		if filters.get('posted') or filters.get('not_posted'):
